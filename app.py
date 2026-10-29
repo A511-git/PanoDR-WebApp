@@ -8,16 +8,15 @@ from PIL import Image
 from helpers import getDevice
 import parser
 import argparse
-from streamlit.server.server import StaticFileHandler
-import torch
-from io import StringIO 
-
-@classmethod
-def _get_cached_version(cls, abs_path: str):
-    with cls._lock:
-        return cls.get_content_version(abs_path)
-
-StaticFileHandler._get_cached_version = _get_cached_version
+try:
+    from streamlit.server.server import StaticFileHandler
+    @classmethod
+    def _get_cached_version(cls, abs_path: str):
+        with cls._lock:
+            return cls.get_content_version(abs_path)
+    StaticFileHandler._get_cached_version = _get_cached_version
+except Exception:
+    pass
 
 def parseArguments():
     parser = argparse.ArgumentParser()  
