@@ -4,7 +4,6 @@ import threading
 import numpy as np
 from numpy.lib import mask_indices
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, ClientSettings
 from PIL import Image, ImageChops
 import cv2
 from data import *
