@@ -1,4 +1,3 @@
-from pkg_resources import load_entry_point
 from torch.optim import lr_scheduler
 from .layer import init_weights
 import numpy as np
@@ -12,6 +11,16 @@ from .basenet import BaseNet
 from .GatedConv.network_module import *
 from .PanoDR_networks import *
 import streamlit as st
+
+if not hasattr(st, "cache"):
+    def _compat_cache(*dargs, **dkwargs):
+        def decorator(func):
+            return func
+        if len(dargs) == 1 and callable(dargs[0]) and not dkwargs:
+            return decorator(dargs[0])
+        return decorator
+    st.cache = _compat_cache
+
 from helpers import layoutViz
 
 class PanoDR(BaseModel):

@@ -12,6 +12,16 @@ from .basemodel import BaseModel
 from .basenet import BaseNet
 from .GatedConv.network_module import *
 import streamlit as st
+
+if not hasattr(st, "cache"):
+    def _compat_cache(*dargs, **dkwargs):
+        def decorator(func):
+            return func
+        if len(dargs) == 1 and callable(dargs[0]) and not dkwargs:
+            return decorator(dargs[0])
+        return decorator
+    st.cache = _compat_cache
+
 from helpers import layoutViz
 
 class InpaintingModel(BaseModel):
