@@ -2,8 +2,23 @@ from helpers import maskHandler
 from panorama import *
 import threading
 import numpy as np
-from numpy.lib import mask_indices
 import streamlit as st
+
+if not hasattr(st, "cache"):
+    def _compat_cache(*dargs, **dkwargs):
+        def decorator(func):
+            try:
+                if hasattr(st, "cache_resource"):
+                    return st.cache_resource(func)
+                elif hasattr(st, "cache_data"):
+                    return st.cache_data(func)
+            except Exception:
+                pass
+            return func
+        if len(dargs) == 1 and callable(dargs[0]) and not dkwargs:
+            return decorator(dargs[0])
+        return decorator
+    st.cache = _compat_cache
 from PIL import Image, ImageChops
 import cv2
 from data import *

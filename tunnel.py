@@ -84,15 +84,24 @@ def find_or_install_cloudflared() -> str:
     print(f"[*] Downloading cloudflared for {platform.system()} ({platform.machine()})...", flush=True)
     print(f"[*] Source: {download_url}", flush=True)
 
-    def _progress(block_num, block_size, total_size):
-        if total_size > 0:
-            downloaded = block_num * block_size
-            percent = min(100.0, (downloaded / total_size) * 100.0)
-            if block_num % 100 == 0 or percent >= 100.0:
-                print(f"\r[*] Downloading cloudflared: {percent:.1f}% ({downloaded // (1024*1024)}MB / {total_size // (1024*1024)}MB)", end="", flush=True)
+    curl_path = shutil.which("curl")
+    downloaded = False
+    if curl_path:
+        print("[*] Downloading with curl...", flush=True)
+        ret = subprocess.run([curl_path, "-fSL", "-o", local_binary, download_url])
+        if ret.returncode == 0 and os.path.isfile(local_binary) and os.path.getsize(local_binary) > 1000000:
+            downloaded = True
 
-    urllib.request.urlretrieve(download_url, local_binary, reporthook=_progress)
-    print("", flush=True)
+    if not downloaded:
+        print("[*] Downloading via urllib...", flush=True)
+        def _progress(block_num, block_size, total_size):
+            if total_size > 0:
+                d = block_num * block_size
+                percent = min(100.0, (d / total_size) * 100.0)
+                if block_num % 100 == 0 or percent >= 100.0:
+                    print(f"\r[*] Downloading cloudflared: {percent:.1f}%", end="", flush=True)
+        urllib.request.urlretrieve(download_url, local_binary, reporthook=_progress)
+        print("", flush=True)
 
     if sys_name != "windows":
         os.chmod(local_binary, 0o755)

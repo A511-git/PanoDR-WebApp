@@ -1,11 +1,12 @@
 """
 Single-command launcher: Runs Streamlit webapp in headless mode and creates
-a Cloudflare reverse tunnel pointing to http://localhost:8501/
+a Cloudflare reverse tunnel pointing to http://127.0.0.1:8501/
 """
 
 import os
 import sys
 import time
+import threading
 import subprocess
 from tunnel import start_tunnel
 
@@ -17,6 +18,13 @@ try:
         sys.stderr.reconfigure(line_buffering=True)
 except Exception:
     pass
+
+
+def _stream_output(proc, prefix):
+    for line in iter(proc.stdout.readline, ""):
+        line_str = line.strip()
+        if line_str:
+            print(f"[{prefix}] {line_str}", flush=True)
 
 
 def main():
@@ -43,16 +51,28 @@ def main():
     ]
 
     print(f"[*] Executing: {' '.join(streamlit_cmd)}", flush=True)
-    st_proc = subprocess.Popen(streamlit_cmd)
+    st_proc = subprocess.Popen(
+        streamlit_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
 
-    # Allow Streamlit a moment to initialize
+    # Stream Streamlit output in background
+    st_thread = threading.Thread(target=_stream_output, args=(st_proc, "streamlit"), daemon=True)
+    st_thread.start()
+
+    # Wait up to 5 seconds for Streamlit to start or fail
     time.sleep(3)
+    if st_proc.poll() is not None:
+        raise RuntimeError(f"Streamlit process exited immediately with code {st_proc.returncode}")
 
     try:
-        tunnel_proc, public_url = start_tunnel(port=port)
+        tunnel_proc, public_url = start_tunnel(port=port, host="127.0.0.1")
         print("[*] Both Streamlit and Cloudflare Tunnel are active!", flush=True)
-        print(f"[*] Access the web application at: {public_url}", flush=True)
-        print("[*] Press Ctrl+C at any time to terminate both processes.\n", flush=True)
+        print(f"[*] Direct Link: {public_url}", flush=True)
+        print("[*] Press Ctrl+C at any time to terminate.\n", flush=True)
 
         while True:
             if st_proc.poll() is not None:
