@@ -7,16 +7,9 @@ import streamlit as st
 if not hasattr(st, "cache"):
     def _compat_cache(*dargs, **dkwargs):
         def decorator(func):
-            try:
-                if hasattr(st, "cache_resource"):
-                    return st.cache_resource(func)
-                elif hasattr(st, "cache_data"):
-                    return st.cache_data(func)
-            except Exception:
-                pass
             return func
         if len(dargs) == 1 and callable(dargs[0]) and not dkwargs:
-            return decorator(dargs[0])
+            return dargs[0]
         return decorator
     st.cache = _compat_cache
 from PIL import Image, ImageChops
@@ -105,13 +98,18 @@ def DR_service(
                 st.image(blended, clamp=True, caption='Blended Panorama')
             st.image(layout, clamp=True, caption='Predicted Input Dense layout')
 
-@st.cache(allow_output_mutation=True, ttl=3600, max_entries=1)
+_NETWORK_CACHE = {}
+
+@st.cache
 def load_network(
     args: argparse.Namespace, 
     device: str,
     model_option = None
     ) -> None:
-    
+    cache_key = (str(device), str(model_option))
+    if cache_key in _NETWORK_CACHE:
+        return _NETWORK_CACHE[cache_key]
+
     if model_option == 'PanoDR':
         PanoDRmodel = PanoDR(opt=args, device=device)
         try:
@@ -126,7 +124,7 @@ def load_network(
         PanoDRmodel.netG.structure_model.load_state_dict(checkpoint_segm)
 
     PanoDRmodel = PanoDRmodel.to(device)
-        
+    _NETWORK_CACHE[cache_key] = PanoDRmodel
     return PanoDRmodel
     
     

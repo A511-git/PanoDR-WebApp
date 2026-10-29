@@ -18,7 +18,7 @@ if not hasattr(st, "cache"):
         def decorator(func):
             return func
         if len(dargs) == 1 and callable(dargs[0]) and not dkwargs:
-            return decorator(dargs[0])
+            return dargs[0]
         return decorator
     st.cache = _compat_cache
 
