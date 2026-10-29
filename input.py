@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 def ApplyCanvas(stroke_width, stroke_color, bg_color, bg_image, drawing_mode, realtime_update, background_image):
 
-    canvas_result = st_canvas(
+    canvas_kwargs = dict(
         fill_color="rgb(0, 0, 0)",  # Fixed fill color with some opacity
         stroke_width=stroke_width,
         stroke_color=stroke_color,
@@ -46,7 +46,11 @@ def ApplyCanvas(stroke_width, stroke_color, bg_color, bg_image, drawing_mode, re
         drawing_mode=drawing_mode,
         key="canvas",
     )
-    st_canvas(initial_drawing=canvas_result.json_data)
+    try:
+        canvas_result = st_canvas(**canvas_kwargs, return_image_data=True)
+    except TypeError:
+        canvas_result = st_canvas(**canvas_kwargs)
+
     return bg_image, canvas_result
 
 def DR_service(
@@ -72,6 +76,9 @@ def DR_service(
         
         with st.spinner('Running DR service..'):
             if args.mask_method == 'FreeForm':
+                if canvas_result is None or canvas_result.image_data is None:
+                    st.error("Please draw a mask on the canvas before clicking 'Run '.")
+                    return
                 mask = canvas_result.image_data
                 mask = maskHandler(mask, height=args.height, width=args.width)
 
